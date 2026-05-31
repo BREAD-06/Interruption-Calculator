@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interruption Statement Calculator — 66KV S/STN SEC-15</title>
+<style>
+  :root {
+    --blue: #1a56db;
+    --blue-light: #e8f0fe;
+    --blue-mid: #c7d9fb;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--gray-100); color: var(--gray-900); font-size: 14px; min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo { width: 32px; height: 32px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .topbar-logo svg { width: 18px; height: 18px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .topbar-sub { font-size: 12px; color: var(--gray-500); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .save-indicator { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.4s; }
+  .save-indicator.visible { opacity: 1; }
+
+  /* LAYOUT */
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 56px); }
+  .sidebar { background: var(--white); border-right: 1px solid var(--gray-200); padding: 16px; overflow-y: auto; }
+  .main { padding: 24px; overflow-y: auto; }
+
+  /* SIDEBAR */
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; padding: 0 4px; }
+  .feeder-btn { width: 100%; text-align: left; padding: 8px 10px; border: none; background: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--gray-700); display: flex; align-items: center; justify-content: space-between; transition: background 0.15s; }
+  .feeder-btn:hover { background: var(--gray-100); }
+  .feeder-btn.active { background: var(--blue-light); color: var(--blue); font-weight: 500; }
+  .feeder-btn.has-data .feeder-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+  .feeder-btn.total-row { font-weight: 600; color: var(--gray-900); background: var(--gray-50); margin: 4px 0; cursor: default; font-size: 12px; }
+  .feeder-btn.total-row:hover { background: var(--gray-50); }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .card-title .badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 20px; }
+  .page-header h2 { font-size: 20px; font-weight: 600; color: var(--gray-900); }
+  .page-header p { font-size: 13px; color: var(--gray-500); margin-top: 3px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; background: var(--gray-100); border-radius: var(--radius); padding: 3px; margin-bottom: 16px; width: fit-content; }
+  .tab-btn { padding: 6px 16px; border: none; background: none; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--gray-500); cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: var(--white); color: var(--gray-900); box-shadow: var(--shadow-sm); }
+
+  /* FORM ELEMENTS */
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  input[type="text"], input[type="number"], select {
+    padding: 8px 10px; font-size: 13px; border: 1px solid var(--gray-300);
+    border-radius: var(--radius); background: var(--white); color: var(--gray-900);
+    transition: border-color 0.15s, box-shadow 0.15s; font-family: inherit;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+  }
+  input.mono { font-family: 'Consolas', 'Courier New', monospace; letter-spacing: 0.04em; }
+  .btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; font-family: inherit; }
+  .btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
+  .btn-primary:hover { background: #1648c4; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost { background: none; color: var(--gray-600); border-color: var(--gray-300); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-danger-ghost { background: none; color: var(--red); border-color: transparent; padding: 4px 6px; font-size: 12px; }
+  .btn-danger-ghost:hover { background: var(--red-light); }
+  .error-msg { font-size: 12px; color: var(--red); margin-top: 5px; min-height: 16px; }
+
+  /* CHIPS */
+  .chips-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 6px 3px 10px; border-radius: 20px; font-size: 12px; font-family: 'Consolas', 'Courier New', monospace; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-700); }
+  .chip.b1 { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
+  .chip.b2 { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; }
+  .chip.b3 { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+  .chip.sd { border-color: #e9d5ff; background: #faf5ff; color: #5b21b6; }
+  .chip-del { background: none; border: none; cursor: pointer; color: inherit; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0 2px; }
+  .chip-del:hover { opacity: 1; }
+
+  /* BUCKET GRID */
+  .bucket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .bucket-box { border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 12px 14px; background: var(--gray-50); }
+  .bucket-box.highlight { border-color: var(--blue-mid); background: var(--blue-light); }
+  .bucket-name { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 10px; }
+  .bucket-box.highlight .bucket-name { color: var(--blue); }
+  .bucket-stats { display: flex; gap: 20px; }
+  .bucket-stat { display: flex; flex-direction: column; gap: 2px; }
+  .bucket-stat-val { font-size: 22px; font-weight: 600; color: var(--gray-900); font-variant-numeric: tabular-nums; }
+  .bucket-box.highlight .bucket-stat-val { color: var(--blue); }
+  .bucket-stat-lbl { font-size: 11px; color: var(--gray-400); }
+
+  /* U2 SECTION */
+  .u2-section { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .u2-result { font-size: 13px; color: var(--gray-600); background: var(--gray-100); padding: 7px 12px; border-radius: var(--radius); border: 1px solid var(--gray-200); }
+  .u2-result strong { color: var(--gray-900); }
+
+  /* SUMMARY TABLE */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+  thead th { background: var(--gray-50); padding: 8px 10px; text-align: center; font-size: 11px; font-weight: 600; color: var(--gray-500); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+  thead th.feeder-col { text-align: left; min-width: 180px; }
+  thead .group-header { background: var(--gray-100); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-400); padding: 5px 10px; border-bottom: 1px solid var(--gray-200); }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); text-align: center; color: var(--gray-700); }
+  tbody td.feeder-col { text-align: left; font-weight: 500; color: var(--gray-900); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--gray-50); }
+  tbody tr.total-66 td { background: #fffbeb; font-weight: 600; color: var(--gray-800); border-top: 1px solid #fde68a; border-bottom: 1px solid #fde68a; }
+  tbody tr.total-11 td { background: #eff6ff; font-weight: 600; color: var(--gray-800); border-top: 1px solid #bfdbfe; border-bottom: 1px solid #bfdbfe; }
+  .zero { color: var(--gray-300); }
+
+  /* EXPORT SECTION */
+  .export-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 20px; margin-top: 16px; }
+  .export-form { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+  .btn-export { background: var(--green); color: white; border-color: var(--green); font-size: 14px; padding: 9px 20px; }
+  .btn-export:hover { background: #15803d; }
+  .btn-reset { color: var(--red); border-color: var(--gray-300); }
+  .btn-reset:hover { background: var(--red-light); border-color: var(--red); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--gray-400); }
+  .empty-state svg { margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--gray-200); max-height: 220px; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
+    </div>
+    <div>
+      <div class="topbar-title">Interruption Calculator</div>
+      <div class="topbar-sub">66KV S/STN SEC-15, HUDA JAGADHRI</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="save-indicator" id="saveIndicator">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      Saved
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">66KV Feeders</div>
+      <div id="sidebar66"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">11KV Feeders</div>
+      <div id="sidebar11"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <p>Select a feeder from the sidebar to start entering data</p>
+    </div>
+    <div id="entryArea" style="display:none"></div>
+    <div id="summaryArea"></div>
+  </div>
+</div>
+
+<script>
+const FEEDERS_66 = ["66KV YNR-SECT-15 C-1","66KV B/KALAN-SEC-15 C-2"];
+const FEEDERS_11 = [
+  "11KV SUB STATION","11KV BAKERPUR","11KV TEJLI","11KV GOLDWOOD IND.",
+  "11KV KALYAN NAGAR","11KV BHAGWATI","11KV SAGAR IND.","11KV SECTOR-15",
+  "11KV STP","11KV STAR BOARD IND.","11KV SAMTA WOOD IND.","11KV GAGAN IND.",
+  "11KV EMPERIUM IND","11KV BHOJPUR AP","11KV DARWA","11KV KAIT",
+  "11KV THERMAL COLONY","11KV YNR ROAD","11KV FATEHGARH","11KV KRISHNA",
+  "11KV SUPER INDUSTRY","11KV EVEREST INDUSTRY","11KV SHREE VISHAVKARMA",
+  "11KV CHAMPION PLYWOOD","11KV COURT ROAD","11KV SAWANPURI","11KV RATTANPURA",
+  "11KV GADHOLI URBAN","11KV BHEL IND"
+];
+const ALL_ENTERABLE = [...FEEDERS_66, ...FEEDERS_11];
+
+// ── DATA STORE ────────────────────────────────────────────────
+let store = {};
+ALL_ENTERABLE.forEach(f => { store[f] = { u2: 0, trips: [], shutdowns: [] }; });
+
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem('interruption_calc_v1');
+    if (saved) { const d = JSON.parse(saved); ALL_ENTERABLE.forEach(f => { if (d[f]) store[f] = d[f]; }); }
+  } catch(e) {}
+}
+function saveToStorage() {
+  try {
+    localStorage.setItem('interruption_calc_v1', JSON.stringify(store));
+    const ind = document.getElementById('saveIndicator');
+    ind.classList.add('visible');
+    setTimeout(() => ind.classList.remove('visible'), 2000);
+  } catch(e) {}
+}
+loadFromStorage();
+
+// ── HELPERS ───────────────────────────────────────────────────
+function autoTime(inp) {
+  let v = inp.value.replace(/[^\d]/g,'');
+  if (v.length > 4) v = v.slice(0,4);
+  if (v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2);
+  inp.value = v;
+}
+function parseHHMM(s) {
+  const m = s.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1]), mn = parseInt(m[2]);
+  if (mn > 59) return null;
+  return h * 60 + mn;
+}
+function fmtMins(mins) {
+  if (mins === 0) return '0:00';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h + ':' + (m < 10 ? '0' : '') + m;
+}
+function fmtMinsExcel(mins) {
+  var n = parseInt(mins) || 0;
+  var h = Math.floor(n / 60), m = n % 60;
+  return h + '.' + (m < 10 ? '0' : '') + m + '.00';
+}
+function bucket(mins) {
+  if (mins <= 30) return 1;
+  if (mins <= 120) return 2;
+  return 3;
+}
+function calcFeeder(f) {
+  const d = store[f];
+  const b = [0,0,0], t = [0,0,0];
+  d.trips.forEach(m => { const k = bucket(m)-1; b[k]++; t[k]+=m; });
+  const u2t = (d.u2||0) * 2;
+  const tripNo = (d.u2||0) + b[0] + b[1] + b[2];
+  const tripTime = u2t + t[0] + t[1] + t[2];
+  const sdNo = d.shutdowns.length;
+  const sdTime = d.shutdowns.reduce((a,v)=>a+v,0);
+  return {
+    u2No: d.u2||0, u2Time: u2t,
+    b1No: b[0], b1Time: t[0],
+    b2No: b[1], b2Time: t[1],
+    b3No: b[2], b3Time: t[2],
+    tripNo, tripTime, sdNo, sdTime,
+    grandNo: tripNo + sdNo, grandTime: tripTime + sdTime
+  };
+}
+function sumFeeders(feeders) {
+  const keys = ['u2No','u2Time','b1No','b1Time','b2No','b2Time','b3No','b3Time','tripNo','tripTime','sdNo','sdTime','grandNo','grandTime'];
+  const out = {}; keys.forEach(k => out[k] = 0);
+  feeders.forEach(f => { const s = calcFeeder(f); keys.forEach(k => out[k] += s[k]); });
+  return out;
+}
+function hasData(f) {
+  const d = store[f];
+  return (d.u2 > 0 || d.trips.length > 0 || d.shutdowns.length > 0);
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────
+let currentFeeder = null;
+
+function buildSidebar() {
+  const s66 = document.getElementById('sidebar66');
+  const s11 = document.getElementById('sidebar11');
+  s66.innerHTML = ''; s11.innerHTML = '';
+  FEEDERS_66.forEach(f => s66.appendChild(makeFeederBtn(f)));
+  FEEDERS_11.forEach(f => s11.appendChild(makeFeederBtn(f)));
+}
+function makeFeederBtn(f) {
+  const btn = document.createElement('button');
+  btn.className = 'feeder-btn' + (hasData(f) ? ' has-data' : '') + (currentFeeder === f ? ' active' : '');
+  btn.dataset.feeder = f;
+  const name = document.createElement('span');
+  name.textContent = f;
+  btn.appendChild(name);
+  if (hasData(f)) {
+    const dot = document.createElement('span');
+    dot.className = 'feeder-dot';
+    btn.appendChild(dot);
+  }
+  btn.addEventListener('click', () => selectFeeder(f));
+  return btn;
+}
+
+function selectFeeder(f) {
+  currentFeeder = f;
+  buildSidebar();
+  renderEntry();
+}
+
+// ── ENTRY PANEL ───────────────────────────────────────────────
+let activeTab = 'trips';
+
+function renderEntry() {
+  const area = document.getElementById('entryArea');
+  const empty = document.getElementById('emptyState');
+  if (!currentFeeder) { area.style.display = 'none'; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  area.style.display = 'block';
+  const d = store[currentFeeder];
+
+  area.innerHTML = `
+    <div class="page-header">
+      <h2>${currentFeeder}</h2>
+      <p>Enter all interruption data for this feeder</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn ${activeTab==='trips'?'active':''}" onclick="switchTab('trips')">Trippings / Cuts</button>
+      <button class="tab-btn ${activeTab==='shutdown'?'active':''}" onclick="switchTab('shutdown')">Shutdowns</button>
+    </div>
+
+    <div id="tabTrips" style="display:${activeTab==='trips'?'block':'none'}">
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Up to 2 min trippings
+          <span class="badge badge-blue">count only</span>
+        </div>
+        <div class="u2-section">
+          <input type="number" id="u2Input" min="0" value="${d.u2||0}" style="width:90px" placeholder="0" oninput="onU2Change(this.value)">
+          <div class="u2-result" id="u2Result">
+            <strong>${d.u2||0}</strong> trips &times; 2 min = <strong>${fmtMins((d.u2||0)*2)}</strong> time lost
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Trip entries
+          <span class="badge badge-amber">auto-bucketed by duration</span>
+        </div>
+        <div class="input-row">
+          <input type="text" id="tripInput" class="mono" placeholder="0015" maxlength="5" style="width:110px" oninput="autoTime(this)" onkeydown="if(event.key==='Enter')addTrip()">
+          <button class="btn btn-primary" onclick="addTrip()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add trip
+          </button>
+        </div>
+        <div class="error-msg" id="tripError"></div>
+        <div class="chips-wrap" id="tripChips"></div>
+        <div class="bucket-grid" id="bucketGrid"></div>
+      </div>
+    </div>
+
+    <div id="tabShutdown" style="display:${activeTab==='shutdown'?'block':'none'}">
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+          Shutdown entries
+        </div>
+        <div class="input-row">
+          <input type="text" id="sdInput" class="mono" placeholder="0230" maxlength="5" style="width:110px" oninput="autoTime(this)" onkeydown="if(event.key==='Enter')addShutdown()">
+          <button class="btn btn-primary" onclick="addShutdown()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add shutdown
+          </button>
+        </div>
+        <div class="error-msg" id="sdError"></div>
+        <div class="chips-wrap" id="sdChips"></div>
+        <div class="bucket-grid" style="margin-top:16px">
+          <div class="bucket-box highlight" id="sdTotBox">
+            <div class="bucket-name">Shutdown total</div>
+            <div class="bucket-stats">
+              <div class="bucket-stat"><span class="bucket-stat-val" id="sdNo">0</span><span class="bucket-stat-lbl">No.</span></div>
+              <div class="bucket-stat"><span class="bucket-stat-val" id="sdTime">0:00</span><span class="bucket-stat-lbl">Time lost</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  renderChips();
+  renderBuckets();
+  renderSDStats();
+  renderSummary();
+}
+
+function switchTab(t) {
+  activeTab = t;
+  const tt = document.getElementById('tabTrips');
+  const ts = document.getElementById('tabShutdown');
+  if (tt) tt.style.display = t==='trips'?'block':'none';
+  if (ts) ts.style.display = t==='shutdown'?'block':'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', (t==='trips'&&i===0)||(t==='shutdown'&&i===1));
+  });
+  if (t==='trips') { setTimeout(()=>{ const inp=document.getElementById('tripInput'); if(inp)inp.focus(); },50); }
+  else { setTimeout(()=>{ const inp=document.getElementById('sdInput'); if(inp)inp.focus(); },50); }
+}
+
+function onU2Change(v) {
+  if (!currentFeeder) return;
+  const n = Math.max(0, parseInt(v)||0);
+  store[currentFeeder].u2 = n;
+  const res = document.getElementById('u2Result');
+  if (res) res.innerHTML = `<strong>${n}</strong> trips &times; 2 min = <strong>${fmtMins(n*2)}</strong> time lost`;
+  renderBuckets();
+  renderSummary();
+  buildSidebar();
+  saveToStorage();
+}
+
+function addTrip() {
+  if (!currentFeeder) return;
+  const inp = document.getElementById('tripInput');
+  const err = document.getElementById('tripError');
+  const mins = parseHHMM(inp.value);
+  if (mins === null) { err.textContent = 'Enter a valid time in HH:MM format (e.g. 00:15)'; return; }
+  if (mins < 3) { err.textContent = 'Time must be greater than 2 min — use the "Up to 2 min" counter above'; return; }
+  err.textContent = '';
+  store[currentFeeder].trips.push(mins);
+  inp.value = ''; inp.focus();
+  renderChips(); renderBuckets(); renderSummary(); buildSidebar(); saveToStorage();
+}
+
+function addShutdown() {
+  if (!currentFeeder) return;
+  const inp = document.getElementById('sdInput');
+  const err = document.getElementById('sdError');
+  const mins = parseHHMM(inp.value);
+  if (mins === null) { err.textContent = 'Enter a valid time in HH:MM format (e.g. 02:30)'; return; }
+  if (mins === 0) { err.textContent = 'Duration cannot be zero'; return; }
+  err.textContent = '';
+  store[currentFeeder].shutdowns.push(mins);
+  inp.value = ''; inp.focus();
+  renderChips(); renderSDStats(); renderSummary(); buildSidebar(); saveToStorage();
+}
+
+function removeEntry(type, idx) {
+  if (!currentFeeder) return;
+  if (type === 'trip') store[currentFeeder].trips.splice(idx, 1);
+  else store[currentFeeder].shutdowns.splice(idx, 1);
+  renderChips(); renderBuckets(); renderSDStats(); renderSummary(); buildSidebar(); saveToStorage();
+}
+
+const BUCKET_LABELS = ['> 2 min < 30 min','> 30 min < 2 hrs','> 2 hrs'];
+const CHIP_CLASSES = ['b1','b2','b3'];
+
+function renderChips() {
+  if (!currentFeeder) return;
+  const d = store[currentFeeder];
+  const tc = document.getElementById('tripChips');
+  const sc = document.getElementById('sdChips');
+  if (tc) {
+    tc.innerHTML = '';
+    d.trips.forEach((m,i) => {
+      const cls = CHIP_CLASSES[bucket(m)-1];
+      const chip = document.createElement('div');
+      chip.className = 'chip '+cls;
+      chip.innerHTML = fmtMins(m)+' <button class="chip-del" onclick="removeEntry(\'trip\','+i+')" title="Remove">×</button>';
+      tc.appendChild(chip);
+    });
+  }
+  if (sc) {
+    sc.innerHTML = '';
+    d.shutdowns.forEach((m,i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip sd';
+      chip.innerHTML = fmtMins(m)+' <button class="chip-del" onclick="removeEntry(\'sd\','+i+')" title="Remove">×</button>';
+      sc.appendChild(chip);
+    });
+  }
+}
+
+function renderBuckets() {
+  if (!currentFeeder) return;
+  const s = calcFeeder(currentFeeder);
+  const grid = document.getElementById('bucketGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const boxes = [
+    { label: '> 2 min — ≤ 30 min', no: s.b1No, time: s.b1Time, cls:'' },
+    { label: '> 30 min — ≤ 2 hrs', no: s.b2No, time: s.b2Time, cls:'' },
+    { label: '> 2 hrs', no: s.b3No, time: s.b3Time, cls:'' },
+    { label: 'Trip total', no: s.tripNo, time: s.tripTime, cls:'highlight' },
+  ];
+  boxes.forEach(b => {
+    const box = document.createElement('div');
+    box.className = 'bucket-box '+(b.cls||'');
+    box.innerHTML = `<div class="bucket-name">${b.label}</div>
+      <div class="bucket-stats">
+        <div class="bucket-stat"><span class="bucket-stat-val">${b.no}</span><span class="bucket-stat-lbl">No.</span></div>
+        <div class="bucket-stat"><span class="bucket-stat-val">${fmtMins(b.time)}</span><span class="bucket-stat-lbl">Time lost</span></div>
+      </div>`;
+    grid.appendChild(box);
+  });
+}
+
+function renderSDStats() {
+  if (!currentFeeder) return;
+  const d = store[currentFeeder];
+  const el_no = document.getElementById('sdNo');
+  const el_time = document.getElementById('sdTime');
+  if (el_no) el_no.textContent = d.shutdowns.length;
+  if (el_time) el_time.textContent = fmtMins(d.shutdowns.reduce((a,v)=>a+v,0));
+}
+
+// ── SUMMARY TABLE ─────────────────────────────────────────────
+function renderSummary() {
+  const area = document.getElementById('summaryArea');
+  const s66 = sumFeeders(FEEDERS_66);
+  const s11 = sumFeeders(FEEDERS_11);
+
+  function tdVal(v, isTime=false) {
+    const display = isTime ? fmtMins(v) : v;
+    return `<td class="${v===0?'zero':''}">${display}</td>`;
+  }
+  function feedRow(f, cls='') {
+    const s = calcFeeder(f);
+    const active = currentFeeder===f ? 'style="background:#f0f7ff"' : '';
+    return `<tr class="${cls}" ${active}>
+      <td class="feeder-col">${f}</td>
+      ${tdVal(s.u2No)}${tdVal(s.u2Time,true)}
+      ${tdVal(s.b1No)}${tdVal(s.b1Time,true)}
+      ${tdVal(s.b2No)}${tdVal(s.b2Time,true)}
+      ${tdVal(s.b3No)}${tdVal(s.b3Time,true)}
+      ${tdVal(s.tripNo)}${tdVal(s.tripTime,true)}
+      ${tdVal(s.sdNo)}${tdVal(s.sdTime,true)}
+      ${tdVal(s.grandNo)}${tdVal(s.grandTime,true)}
+    </tr>`;
+  }
+  function totRow(label, s, cls) {
+    return `<tr class="${cls}">
+      <td class="feeder-col">${label}</td>
+      ${tdVal(s.u2No)}${tdVal(s.u2Time,true)}
+      ${tdVal(s.b1No)}${tdVal(s.b1Time,true)}
+      ${tdVal(s.b2No)}${tdVal(s.b2Time,true)}
+      ${tdVal(s.b3No)}${tdVal(s.b3Time,true)}
+      ${tdVal(s.tripNo)}${tdVal(s.tripTime,true)}
+      ${tdVal(s.sdNo)}${tdVal(s.sdTime,true)}
+      ${tdVal(s.grandNo)}${tdVal(s.grandTime,true)}
+    </tr>`;
+  }
+
+  area.innerHTML = `
+    <div class="card" style="margin-top:24px">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Monthly summary — all feeders
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="feeder-col group-header">Feeder</th>
+              <th colspan="2" class="group-header">≤ 2 min</th>
+              <th colspan="2" class="group-header">&gt; 2 min — ≤ 30 min</th>
+              <th colspan="2" class="group-header">&gt; 30 min — ≤ 2 hrs</th>
+              <th colspan="2" class="group-header">&gt; 2 hrs</th>
+              <th colspan="2" class="group-header">Trip total</th>
+              <th colspan="2" class="group-header">Shutdowns</th>
+              <th colspan="2" class="group-header">Grand total</th>
+            </tr>
+            <tr>
+              <th class="feeder-col">Name</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+              <th>No.</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${FEEDERS_66.map(f=>feedRow(f)).join('')}
+            ${totRow('TOTAL 66KV', s66, 'total-66')}
+            ${FEEDERS_11.map(f=>feedRow(f)).join('')}
+            ${totRow('TOTAL 11KV', s11, 'total-11')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="export-card">
+      <div class="card-title" style="margin-bottom:14px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export to Excel
+      </div>
+      <div class="export-form">
+        <div class="form-group">
+          <label>Month</label>
+          <input type="text" id="exportMonth" placeholder="e.g. APRIL" style="width:130px" value="${getSavedMonth()}">
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="text" id="exportYear" placeholder="e.g. 2026" style="width:90px" value="${getSavedYear()}">
+        </div>
+        <button class="btn btn-export" onclick="exportExcel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download .xlsx
+        </button>
+        <button class="btn btn-ghost btn-reset" onclick="confirmReset()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          Reset all data
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function getSavedMonth() {
+  try { return localStorage.getItem('export_month') || 'APRIL'; } catch(e) { return 'APRIL'; }
+}
+function getSavedYear() {
+  try { return localStorage.getItem('export_year') || '2026'; } catch(e) { return '2026'; }
+}
+
+function confirmReset() {
+  if (confirm('Are you sure you want to clear all entered data? This cannot be undone.')) {
+    ALL_ENTERABLE.forEach(f => { store[f] = { u2: 0, trips: [], shutdowns: [] }; });
+    try { localStorage.removeItem('interruption_calc_v1'); } catch(e) {}
+    currentFeeder = null;
+    buildSidebar();
+    document.getElementById('entryArea').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    renderSummary();
+  }
+}
+
+// ── EXCEL EXPORT ──────────────────────────────────────────────
+function exportExcel() {
+  try {
+    if (typeof XLSX === 'undefined') {
+      alert('Excel library not loaded. Please check your internet connection and reload the page.');
+      return;
+    }
+    const monthEl = document.getElementById('exportMonth');
+    const yearEl = document.getElementById('exportYear');
+    const month = ((monthEl && monthEl.value) || 'MONTH').toUpperCase().trim();
+    const year = ((yearEl && yearEl.value) || '2026').trim();
+    try { localStorage.setItem('export_month', month); localStorage.setItem('export_year', year); } catch(e) {}
+
+    const wb = XLSX.utils.book_new();
+    if (!wb.SheetNames) wb.SheetNames = [];
+    if (!wb.Sheets) wb.Sheets = {};
+    const rows = [];
+
+    rows.push(['MONTHLY STATEMENT OF INTRUPTIONS FOR THE MONTH OF ' + month + ' ' + year + ' IN RESPECT OF 66KV S/STN SEC-15,HUDA JAGADHRI.']);
+    rows.push([]);
+    rows.push(['NAME OF S/STN', 'NAME OF FEEDERS', 'Trippings / Cuts/ Shut downs', '', '', '', '', '', '', '', '', '', 'No. of Cuts/Shutdown', '', 'GRAND TOTAL', '', '']);
+    rows.push(['', '', 'Up to 2min.', '', '>2min.< 30 min', '', '>30min.<', '', '>2hrs', '', 'Total', '', '', '', 'Total', '']);
+    rows.push(['', '', 'No.', 'Time', 'No.', 'Time', 'No.', 'Time', 'No.', 'Time', 'No.', 'Time', 'No.', 'Time', 'No.', 'Time']);
+
+    function addRow(label, s, stn) {
+      rows.push([
+        stn || '', label,
+        s.u2No, fmtMinsExcel(s.u2Time),
+        s.b1No, fmtMinsExcel(s.b1Time),
+        s.b2No, fmtMinsExcel(s.b2Time),
+        s.b3No, fmtMinsExcel(s.b3Time),
+        s.tripNo, fmtMinsExcel(s.tripTime),
+        s.sdNo, fmtMinsExcel(s.sdTime),
+        s.grandNo, fmtMinsExcel(s.grandTime)
+      ]);
+    }
+
+    FEEDERS_66.forEach(function(f, idx) {
+      addRow(f, calcFeeder(f), idx === 0 ? '66KV Sub-station, Sector-15, HUDA, Jagadhri.' : '');
+    });
+    addRow('TOTAL 66KV', sumFeeders(FEEDERS_66));
+    FEEDERS_11.forEach(function(f) { addRow(f, calcFeeder(f)); });
+    addRow('TOTAL 11KV', sumFeeders(FEEDERS_11));
+
+    // CC list and Signature
+    rows.push([]);
+    rows.push([]);
+    rows.push(['', 'CC to : - XEN TS DIVN HVPNL YNR.', '', '', '', '', '', '', '', '', '', '', '', 'SSE']);
+    rows.push(['', "          XEN 'OP' DIVN. UHBVNL YNR.", '', '', '', '', '', '', '', '', '', '', '', '66KV S/STN SECT-15 HUDA,']);
+    rows.push(['', "          XEN 'OP' S/URBAN DIVN. UHBVNL JAGADHRI.", '', '', '', '', '', '', '', '', '', '', '', '    JAGADHRI.']);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      {wch:16},{wch:28},
+      {wch:6},{wch:11},
+      {wch:6},{wch:11},
+      {wch:6},{wch:11},
+      {wch:6},{wch:11},
+      {wch:6},{wch:11},
+      {wch:6},{wch:11},
+      {wch:6},{wch:12}
+    ];
+    ws['!merges'] = [
+      {s:{r:0,c:0},e:{r:0,c:15}}, // Title merge
+      {s:{r:2,c:0},e:{r:4,c:0}}, // S/STN header vertical merge
+      {s:{r:2,c:1},e:{r:4,c:1}}, // Feeders header vertical merge
+      {s:{r:2,c:2},e:{r:2,c:11}}, // Trippings category merge
+      {s:{r:2,c:12},e:{r:2,c:13}}, // SD category merge
+      {s:{r:2,c:14},e:{r:2,c:15}}, // Grand Total category merge
+      {s:{r:3,c:2},e:{r:3,c:3}}, // Up to 2m subcategory merge
+      {s:{r:3,c:4},e:{r:3,c:5}}, // >2m subcategory merge
+      {s:{r:3,c:6},e:{r:3,c:7}}, // >30m subcategory merge
+      {s:{r:3,c:8},e:{r:3,c:9}}, // >2h subcategory merge
+      {s:{r:3,c:10},e:{r:3,c:11}}, // Trip Total subcategory merge
+      {s:{r:3,c:14},e:{r:3,c:15}}, // Grand Total subcategory merge
+      {s:{r:5,c:0},e:{r:36,c:0}} // S/STN data vertical merge
+    ];
+
+    // Apply styling to all cells
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = 0; R <= range.e.r; ++R) {
+      for (let C = 0; C <= range.e.c; ++C) {
+        const isTitle = (R === 0);
+        const isHeader = (R >= 2 && R <= 4);
+        const isData = (R >= 5 && R <= 37); // Table grid including totals
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        
+        if (!ws[cellRef]) {
+          if (isTitle || isHeader || isData) {
+            ws[cellRef] = { t: "s", v: "" };
+          } else {
+            continue;
+          }
+        }
+        
+        let style = {
+          font: {},
+          alignment: { vertical: "center" },
+          border: {}
+        };
+        
+        const rowData = rows[R];
+        const isTotal = rowData && (rowData[1] === 'TOTAL 66KV' || rowData[1] === 'TOTAL 11KV');
+        
+        if (isTitle || isHeader || isTotal) {
+          style.font.bold = true;
+        }
+        
+        if (isHeader || isData) {
+          style.border = {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          };
+          
+          if (C === 0 && isData) {
+            style.font.bold = true;
+            style.alignment.horizontal = "center";
+            style.alignment.textRotation = 90;
+          } else if (C === 1 && isData) {
+            style.alignment.horizontal = "left";
+          } else {
+            style.alignment.horizontal = "center";
+          }
+        } else if (isTitle) {
+          style.alignment.horizontal = "center";
+        }
+        
+        ws[cellRef].s = style;
+      }
+    }
+
+    var sheetName = String(month + ' ' + year).substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, 'Interruption_Statement_' + month + '_' + year + '.xlsx');
+
+  } catch(exportErr) {
+    alert('Export failed: ' + exportErr.message + '\n\nMake sure you are online (needed to load the Excel library) and try again.');
+    console.error('Export error:', exportErr);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+buildSidebar();
+renderSummary();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script>
+if (typeof XLSX === 'undefined') {
+  var s = document.createElement('script');
+  s.src = 'https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+  document.head.appendChild(s);
+}
+</script>
+</body>
+</html>
